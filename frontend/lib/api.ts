@@ -147,9 +147,29 @@ export const apiService = {
     return response.data;
   },
 
+  // 정리 대상 파일 미리보기
+  async previewCleanup() {
+    const response = await api.get('/admin/cleanup/preview');
+    return response.data;
+  },
+
   // 고아 파일 정리
   async cleanupFiles() {
     const response = await api.post('/admin/cleanup');
+    return response.data;
+  },
+
+  // 선택된 문서들 삭제
+  async deleteSelectedDocuments(docIds: string[]) {
+    const response = await api.post('/admin/delete-selected', docIds);
+    return response.data;
+  },
+
+  // 문서 파일명 수정
+  async updateDocumentFilename(docId: string, newFilename: string) {
+    const response = await api.put(`/admin/documents/${docId}/filename`, null, {
+      params: { new_filename: newFilename }
+    });
     return response.data;
   },
 

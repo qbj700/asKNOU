@@ -51,8 +51,8 @@ async def upload_pdf(file: UploadFile = File(...)) -> Dict[str, Any]:
             FileManager.delete_document_files(doc_id)
             raise HTTPException(status_code=500, detail="임베딩 생성에 실패했습니다.")
         
-        # 4. 벡터 저장소에 저장
-        vector_store = VectorStoreManager.create_document_index(doc_id, embeddings, chunks)
+        # 4. 벡터 저장소에 저장 (원본 파일명 포함)
+        vector_store = VectorStoreManager.create_document_index(doc_id, embeddings, chunks, original_filename=file.filename)
         
         # 5. 결과 반환
         return {

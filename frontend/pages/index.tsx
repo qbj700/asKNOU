@@ -1,5 +1,4 @@
 import Head from 'next/head';
-import Link from 'next/link';
 import { useState, useRef } from 'react';
 import ChatBox, { ChatBoxRef } from '../components/ChatBox';
 
@@ -50,9 +49,6 @@ export default function Home() {
               </div>
               
               <nav className="flex items-center space-x-4">
-                <Link href="/admin" className="text-gray-600 hover:text-knou-600 transition-colors">
-                  관리자
-                </Link>
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse-slow" title="온라인 상태"></div>
               </nav>
             </div>

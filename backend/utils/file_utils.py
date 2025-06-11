@@ -73,13 +73,31 @@ class FileManager:
             metadata_path = FileManager.get_metadata_path(doc_id)
             vector_path = FileManager.get_vectorstore_path(doc_id)
             
+            # 원본 파일명 가져오기
+            original_filename = FileManager.get_original_filename(doc_id)
+            
             documents.append({
                 "doc_id": doc_id,
-                "filename": pdf_file.name,
+                "filename": original_filename or pdf_file.name,  # 원본 파일명이 있으면 사용, 없으면 UUID 파일명
                 "file_size": pdf_file.stat().st_size,
                 "created_at": pdf_file.stat().st_ctime,
                 "has_vector": vector_path.exists(),
                 "has_metadata": metadata_path.exists()
             })
         
-        return documents 
+        return documents
+    
+    @staticmethod
+    def get_original_filename(doc_id: str) -> Optional[str]:
+        """문서의 원본 파일명을 반환합니다."""
+        try:
+            metadata_path = FileManager.get_metadata_path(doc_id)
+            if metadata_path.exists():
+                import json
+                with open(metadata_path, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                    if isinstance(metadata, dict):
+                        return metadata.get("original_filename")
+            return None
+        except Exception:
+            return None 

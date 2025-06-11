@@ -1,0 +1,141 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# asKNOU Project Development Rules
+
+## Project Overview
+asKNOU is a RAG-based AI chatbot system for Korea National Open University (KNOU) students. It provides intelligent Q&A functionality using uploaded PDF documents and Gemini AI.
+
+## Architecture
+- **Frontend**: Next.js with TypeScript, Tailwind CSS
+- **Backend**: FastAPI with Python, using virtual environment
+- **AI**: Google Gemini 1.5 Flash with RAG (Retrieval Augmented Generation)
+- **Vector Search**: Sentence transformers with FAISS
+- **Authentication**: Frontend-only session-based admin login
+
+## Key Files Structure
+
+### Frontend Core Files
+- [frontend/pages/index.tsx](mdc:frontend/pages/index.tsx) - Main chat interface with sidebar cards
+- [frontend/pages/admin.tsx](mdc:frontend/pages/admin.tsx) - Admin panel for file management
+- [frontend/components/ChatBox.tsx](mdc:frontend/components/ChatBox.tsx) - Main chat component with ReactMarkdown
+- [frontend/components/AdminLogin.tsx](mdc:frontend/components/AdminLogin.tsx) - Admin authentication component
+
+### Backend Core Files
+- [backend/main.py](mdc:backend/main.py) - FastAPI server entry point
+- [backend/config.py](mdc:backend/config.py) - Environment configuration and settings
+- [backend/services/qa_chain.py](mdc:backend/services/qa_chain.py) - Gemini AI integration for Q&A
+- [backend/services/vector_store.py](mdc:backend/services/vector_store.py) - Vector database management
+- [backend/services/embedder.py](mdc:backend/services/embedder.py) - Text embedding service
+
+### Configuration Files
+- [frontend/tailwind.config.js](mdc:frontend/tailwind.config.js) - Tailwind with KNOU branding colors
+- [frontend/env_local_example.txt](mdc:frontend/env_local_example.txt) - Frontend environment variables template
+- [backend/env_example.txt](mdc:backend/env_example.txt) - Backend environment variables template
+
+## Development Guidelines
+
+### Styling Standards
+- Use KNOU brand colors: `knou-50` to `knou-900` (blue palette)
+- Apply `prose` classes from `@tailwindcss/typography` for markdown content
+- Maintain consistent card layout with `card` utility class
+- Use `chat-message` and `chat-message-user`/`chat-message-bot` for chat bubbles
+
+### Component Patterns
+- ChatBox uses `forwardRef` for external question injection via `askQuestion` method
+- Admin components check `sessionStorage` for authentication state
+- All forms include loading states and proper error handling
+- Use React hooks pattern for state management
+
+### API Integration
+- Backend uses 2000 token limit for Gemini responses
+- Vector search configured for TOP_K_RESULTS from environment
+- File uploads handled through FastAPI with proper error responses
+- CORS enabled for localhost development
+
+### Authentication Flow
+- Admin login stores session in `sessionStorage`
+- Environment variables: `NEXT_PUBLIC_ADMIN_ID`, `NEXT_PUBLIC_ADMIN_PW`
+- No backend authentication required - frontend-only validation
+- Session automatically expires when browser closes
+
+## Environment Setup
+
+### Environment Files Management
+⚠️ **Important**: `.env` files are gitignored and cannot be directly accessed. Always modify example files:
+- **Backend**: Edit `env_example.txt` file for environment variable configuration
+- **Frontend**: Edit `env_local_example.txt` file for environment variable configuration
+
+### Frontend Environment (env_local_example.txt)
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_ADMIN_ID=admin
+NEXT_PUBLIC_ADMIN_PW=knou2024!
+NODE_ENV=development
+```
+
+### Backend Environment (env_example.txt)
+```
+GEMINI_API_KEY=your_gemini_api_key
+TOP_K_RESULTS=10
+CHUNK_SIZE=600
+CHUNK_OVERLAP=100
+```
+
+### Environment Variables Setup
+- Copy `env_local_example.txt` to `.env.local` in frontend directory
+- Copy `env_example.txt` to `.env` in backend directory
+- Update values as needed for your development environment
+
+## Development Commands
+
+### Environment Management
+- **Backend commands**: Must be executed within activated venv environment
+  ```bash
+  # Always activate venv first for backend work
+  cd backend
+  venv\Scripts\activate
+  python -m uvicorn main:app --reload
+  ```
+- **Frontend commands**: Must deactivate venv if active before execution
+  ```bash
+  # If venv is active, deactivate first
+  deactivate  # (if venv is active)
+  cd frontend
+  npm run dev
+  ```
+
+### Command Reference
+- Frontend: `npm run dev` (port 3000)
+- Backend: `python -m uvicorn main:app --reload` (port 8000)
+- Backend dependency install: `pip install -r requirements.txt` (in venv)
+- Frontend dependency install: `npm install` (outside venv)
+
+## Key Features Implementation
+- **Question Buttons**: Clickable examples in sidebar that auto-populate chat
+- **Markdown Rendering**: Formatted responses with custom styling
+- **File Upload**: PDF processing and vector storage for RAG
+- **Responsive Design**: Mobile-friendly with collapsible sidebar
+- **Session Management**: Admin access control with auto-logout
+
+## Code Quality Standards
+- TypeScript strict mode enabled
+- Proper error handling for all API calls
+- Loading states for async operations
+- Accessible form components with proper labels
+- Korean language support throughout UI
+
+## Security Considerations
+- Admin credentials managed via environment variables
+- Session storage for temporary authentication
+- API URL configurable for different environments
+- No sensitive data in client-side code
+
+
+
+
+
+
+

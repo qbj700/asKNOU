@@ -23,13 +23,14 @@ class VectorStore:
         self.metadata = []
         self.dimension = None
     
-    def create_index(self, embeddings: np.ndarray, chunks: List[Dict[str, Any]]):
+    def create_index(self, embeddings: np.ndarray, chunks: List[Dict[str, Any]], original_filename: str = None):
         """
         새로운 FAISS 인덱스를 생성하고 저장합니다.
         
         Args:
             embeddings: 임베딩 벡터 배열
             chunks: 청크 메타데이터 리스트
+            original_filename: 원본 파일명
         """
         if len(embeddings) == 0:
             raise ValueError("임베딩 배열이 비어있습니다.")
@@ -49,8 +50,14 @@ class VectorStore:
         # 벡터 추가
         self.index.add(normalized_embeddings.astype(np.float32))
         
-        # 메타데이터 저장
-        self.metadata = chunks
+        # 메타데이터 저장 (원본 파일명 포함)
+        self.metadata = {
+            "original_filename": original_filename,
+            "doc_id": self.doc_id,
+            "total_chunks": len(chunks),
+            "dimension": self.dimension,
+            "chunks": chunks
+        }
         
         # 파일로 저장
         self._save_to_disk()
@@ -112,10 +119,11 @@ class VectorStore:
         
         # 결과 구성
         results = []
+        chunks = self.metadata.get("chunks", []) if isinstance(self.metadata, dict) else self.metadata
         for i, (score, idx) in enumerate(zip(scores[0], indices[0])):
-            if idx != -1 and idx < len(self.metadata):  # 유효한 인덱스인지 확인
+            if idx != -1 and idx < len(chunks):  # 유효한 인덱스인지 확인
                 results.append({
-                    "chunk": self.metadata[idx],
+                    "chunk": chunks[idx],
                     "score": float(score),
                     "rank": i + 1
                 })
@@ -141,11 +149,20 @@ class VectorStore:
             if not self.load_index():
                 return {"error": "벡터 저장소를 로드할 수 없습니다."}
         
+        # 메타데이터가 새 형식인지 확인
+        if isinstance(self.metadata, dict):
+            total_chunks = len(self.metadata.get("chunks", []))
+            original_filename = self.metadata.get("original_filename")
+        else:
+            total_chunks = len(self.metadata)
+            original_filename = None
+        
         return {
             "doc_id": self.doc_id,
+            "original_filename": original_filename,
             "total_vectors": self.index.ntotal,
             "dimension": self.dimension,
-            "total_chunks": len(self.metadata),
+            "total_chunks": total_chunks,
             "index_file_exists": self.index_path.exists(),
             "metadata_file_exists": self.metadata_path.exists()
         }
@@ -154,7 +171,7 @@ class VectorStoreManager:
     """여러 문서의 벡터 저장소를 관리하는 클래스"""
     
     @staticmethod
-    def create_document_index(doc_id: str, embeddings: np.ndarray, chunks: List[Dict[str, Any]]) -> VectorStore:
+    def create_document_index(doc_id: str, embeddings: np.ndarray, chunks: List[Dict[str, Any]], original_filename: str = None) -> VectorStore:
         """
         새로운 문서의 벡터 인덱스를 생성합니다.
         
@@ -162,12 +179,13 @@ class VectorStoreManager:
             doc_id: 문서 ID
             embeddings: 임베딩 벡터 배열
             chunks: 청크 메타데이터 리스트
+            original_filename: 원본 파일명
             
         Returns:
             생성된 벡터 저장소 인스턴스
         """
         vector_store = VectorStore(doc_id)
-        vector_store.create_index(embeddings, chunks)
+        vector_store.create_index(embeddings, chunks, original_filename)
         return vector_store
     
     @staticmethod

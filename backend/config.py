@@ -27,6 +27,11 @@ class Settings:
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "600"))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "100"))
     
+    # 관리자 계정 설정
+    ADMIN_ID: str = os.getenv("ADMIN_ID", "admin")
+    ADMIN_PW: str = os.getenv("ADMIN_PW", "password")
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this")
+    
     def __init__(self):
         # 디렉터리 생성
         self.DATA_DIR.mkdir(exist_ok=True)

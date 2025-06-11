@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from typing import Dict, List, Any
 from datetime import datetime
 
+from config import settings
 from utils.file_utils import FileManager
 from services.vector_store import VectorStoreManager
 
@@ -152,6 +153,47 @@ async def delete_document(doc_id: str) -> Dict[str, Any]:
             detail=f"문서 삭제 중 오류가 발생했습니다: {str(e)}"
         )
 
+@router.get("/cleanup/preview")
+async def preview_cleanup() -> Dict[str, Any]:
+    """
+    정리 대상 파일들을 미리 확인합니다.
+    
+    Returns:
+        정리 대상 파일 목록
+    """
+    try:
+        documents = FileManager.list_documents()
+        
+        cleanup_targets = []
+        for doc in documents:
+            doc_id = doc["doc_id"]
+            
+            # PDF는 있지만 벡터 저장소나 메타데이터가 없는 경우
+            if not doc["has_vector"] or not doc["has_metadata"]:
+                cleanup_targets.append({
+                    "doc_id": doc_id,
+                    "filename": doc["filename"],
+                    "file_size_mb": round(doc["file_size"] / (1024 * 1024), 2),
+                    "reason": "incomplete_processing",
+                    "issues": {
+                        "no_vector": not doc["has_vector"],
+                        "no_metadata": not doc["has_metadata"]
+                    }
+                })
+        
+        return {
+            "success": True,
+            "cleanup_targets": cleanup_targets,
+            "total_count": len(cleanup_targets),
+            "total_size_mb": round(sum(target["file_size_mb"] for target in cleanup_targets), 2)
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"정리 미리보기 중 오류가 발생했습니다: {str(e)}"
+        )
+
 @router.post("/cleanup")
 async def cleanup_orphaned_files() -> Dict[str, Any]:
     """
@@ -187,6 +229,151 @@ async def cleanup_orphaned_files() -> Dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"파일 정리 중 오류가 발생했습니다: {str(e)}"
+        )
+
+@router.put("/documents/{doc_id}/filename")
+async def update_document_filename(doc_id: str, new_filename: str) -> Dict[str, Any]:
+    """
+    문서의 원본 파일명을 수정합니다.
+    
+    Args:
+        doc_id: 문서 ID
+        new_filename: 새로운 파일명
+        
+    Returns:
+        수정 결과
+    """
+    try:
+        # 문서 존재 확인
+        pdf_path = FileManager.get_pdf_path(doc_id)
+        if not pdf_path.exists():
+            raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다.")
+        
+        # 메타데이터 파일 확인 및 로드
+        metadata_path = FileManager.get_metadata_path(doc_id)
+        if not metadata_path.exists():
+            raise HTTPException(status_code=404, detail="메타데이터를 찾을 수 없습니다.")
+        
+        # 메타데이터 로드
+        import json
+        with open(metadata_path, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+        
+        # 새 파일명 검증
+        if not new_filename.strip():
+            raise HTTPException(status_code=400, detail="파일명이 비어있습니다.")
+        
+        # 확장자 확인 및 추가
+        if not new_filename.lower().endswith('.pdf'):
+            new_filename += '.pdf'
+        
+        # 기존 파일명 저장
+        old_filename = metadata.get("original_filename", "Unknown")
+        
+        # 메타데이터 업데이트
+        if isinstance(metadata, dict):
+            metadata["original_filename"] = new_filename
+        else:
+            # 구 형식인 경우 새 형식으로 변환
+            metadata = {
+                "original_filename": new_filename,
+                "doc_id": doc_id,
+                "total_chunks": len(metadata) if isinstance(metadata, list) else 0,
+                "chunks": metadata if isinstance(metadata, list) else []
+            }
+        
+        # 메타데이터 파일 저장
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+        
+        return {
+            "success": True,
+            "message": f"기존 : {old_filename}\n변경 : {new_filename}\n\n파일명 변경이 완료되었습니다.",
+            "doc_id": doc_id,
+            "old_filename": old_filename,
+            "new_filename": new_filename
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"파일명 수정 중 오류가 발생했습니다: {str(e)}"
+        )
+
+@router.post("/delete-selected")
+async def delete_selected_documents(doc_ids: List[str]) -> Dict[str, Any]:
+    """
+    선택된 문서들을 삭제합니다.
+    
+    Args:
+        doc_ids: 삭제할 문서 ID 리스트
+        
+    Returns:
+        삭제 결과
+    """
+    try:
+        if not doc_ids:
+            raise HTTPException(status_code=400, detail="삭제할 문서가 선택되지 않았습니다.")
+        
+        deleted_files = []
+        failed_files = []
+        total_size = 0
+        
+        for doc_id in doc_ids:
+            try:
+                # 문서 존재 확인
+                pdf_path = FileManager.get_pdf_path(doc_id)
+                if not pdf_path.exists():
+                    failed_files.append({
+                        "doc_id": doc_id,
+                        "reason": "파일을 찾을 수 없습니다."
+                    })
+                    continue
+                
+                # 삭제 전 정보 수집
+                file_size = pdf_path.stat().st_size
+                original_filename = FileManager.get_original_filename(doc_id) or pdf_path.name
+                
+                # 파일 삭제
+                success = FileManager.delete_document_files(doc_id)
+                
+                if success:
+                    deleted_files.append({
+                        "doc_id": doc_id,
+                        "filename": original_filename,
+                        "file_size_mb": round(file_size / (1024 * 1024), 2)
+                    })
+                    total_size += file_size
+                else:
+                    failed_files.append({
+                        "doc_id": doc_id,
+                        "filename": original_filename,
+                        "reason": "삭제 중 오류 발생"
+                    })
+                    
+            except Exception as e:
+                failed_files.append({
+                    "doc_id": doc_id,
+                    "reason": str(e)
+                })
+        
+        return {
+            "success": True,
+            "message": f"{len(deleted_files)}개 문서가 삭제되었습니다." + 
+                      (f" ({len(failed_files)}개 실패)" if failed_files else ""),
+            "deleted_files": deleted_files,
+            "failed_files": failed_files,
+            "total_deleted_size_mb": round(total_size / (1024 * 1024), 2)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"선택된 문서 삭제 중 오류가 발생했습니다: {str(e)}"
         )
 
 @router.get("/statistics")
