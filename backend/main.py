@@ -76,7 +76,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",  # Next.js 개발 서버
         "http://127.0.0.1:3000",
-        "https://your-frontend-domain.vercel.app"  # 배포된 프론트엔드 도메인
+        "https://https://asknou.vercel.app/"  # 실제 프론트엔드 도메인으로 변경 필요
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
