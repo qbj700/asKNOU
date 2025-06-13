@@ -199,11 +199,16 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="text-sm text-gray-600">
-                © 2024 asKNOU. 방송통신대학교 학사정보 AI 길라잡이
+                © 2025 asKNOU. 방송통신대학교 학사정보 AI 길라잡이
               </div>
-              <div className="flex items-center space-x-4 mt-4 md:mt-0">
+              <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 mt-4 md:mt-0">
                 <span className="text-xs text-gray-500">
                   Powered by Gemini AI & RAG Technology
+                </span>
+                <span className="hidden md:inline text-gray-300">|</span>
+                <span className="text-xs text-gray-500 text-center">
+                  본 서비스는 PyMuPDF(AGPL v3), FastAPI(MIT), Transformers(Apache 2.0) 등 다양한 오픈소스 소프트웨어를 사용하며, 전체 소스코드는 AGPL v3 라이선스에 따라 
+                  <a href="https://github.com/qbj700/asKNOU" target="_blank" rel="noopener noreferrer" className="text-knou-600 hover:text-knou-700 underline ml-1">GitHub</a>에서 공개되어 있습니다.
                 </span>
               </div>
             </div>

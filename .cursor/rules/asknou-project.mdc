@@ -72,7 +72,7 @@ asKNOU is a RAG-based AI chatbot system for Korea National Open University (KNOU
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_ADMIN_ID=admin
-NEXT_PUBLIC_ADMIN_PW=knou2024!
+NEXT_PUBLIC_ADMIN_PW=knou2025!
 NODE_ENV=development
 ```
 

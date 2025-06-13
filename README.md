@@ -228,9 +228,9 @@ yarn dev
 
 ## 🚀 배포
 
-### 백엔드 (Render)
+### 백엔드 (Railway)
 
-1. Render에서 새 웹서비스 생성
+1. Railway에서 새 웹서비스 생성
 2. GitHub 저장소 연결
 3. 빌드 명령: `pip install -r requirements.txt`
 4. 시작 명령: `python main.py`
@@ -244,18 +244,6 @@ yarn dev
 4. 루트 디렉터리: `frontend`
 5. 환경 변수 설정
 
-## 🤝 기여
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
-
 ## 📞 문의
 
 프로젝트에 대한 문의사항이나 제안사항이 있으시면 이슈를 등록해주세요.
@@ -266,3 +254,51 @@ yarn dev
 - **Hugging Face**: 한국어 임베딩 모델 제공
 - **Google**: Gemini AI API 제공
 - **FastAPI & Next.js**: 훌륭한 프레임워크 제공 
+
+## 오픈소스 라이선스 정보
+
+이 프로젝트는 다음과 같은 오픈소스 라이브러리들을 사용하고 있습니다:
+
+### Backend Dependencies
+
+| 라이브러리 | 버전 | 라이선스 |
+|------------|------|----------|
+| FastAPI | 0.104.1 | MIT License |
+| Uvicorn | 0.24.0 | BSD License |
+| PyMuPDF | 1.23.19 | GNU AGPL v3 |
+| Transformers | 4.36.2 | Apache License 2.0 |
+| PyTorch | ≥2.6.0 | BSD License |
+| Sentence-Transformers | ≥2.7.0 | Apache License 2.0 |
+| FAISS | 1.11.0 | MIT License |
+| Google Generative AI | 0.3.2 | Apache License 2.0 |
+| Python-dotenv | 1.0.0 | BSD License |
+| NumPy | ≥1.25.0 | BSD License |
+| Pydantic | 2.5.0 | MIT License |
+
+### Frontend Dependencies
+
+| 라이브러리 | 버전 | 라이선스 |
+|------------|------|----------|
+| Next.js | 14.2.29 | MIT License |
+| React | 18.2.0 | MIT License |
+| React DOM | 18.2.0 | MIT License |
+| Axios | 1.9.0 | MIT License |
+| React Markdown | 10.1.0 | MIT License |
+| Tailwind CSS | 3.3.6 | MIT License |
+| TypeScript | 5.3.3 | Apache License 2.0 |
+
+### 주요 모델 및 데이터
+
+- **Sentence Transformer**: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (Apache License 2.0)
+- **Gemini Pro**: Google AI Studio API (Google AI Studio Terms of Service)
+
+### 오픈소스 라이선스 및 출처
+
+이 프로젝트는 다음 오픈소스 소프트웨어를 사용합니다:
+
+- PyMuPDF (AGPL v3): https://github.com/pymupdf/PyMuPDF
+- FastAPI (MIT): https://github.com/tiangolo/fastapi
+- Transformers (Apache 2.0): https://github.com/huggingface/transformers
+- 기타 라이브러리 및 상세 라이선스는 본문 표 참고
+
+각 라이브러리의 라이선스 조건을 준수하며, 소스코드는 AGPL v3에 따라 전체 공개됩니다.

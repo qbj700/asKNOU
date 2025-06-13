@@ -6,4 +6,4 @@ NODE_ENV=development
 
 # 관리자 계정 설정
 NEXT_PUBLIC_ADMIN_ID=admin
-NEXT_PUBLIC_ADMIN_PW=knou2024! 
+NEXT_PUBLIC_ADMIN_PW=knou2025! 
