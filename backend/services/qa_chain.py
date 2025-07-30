@@ -1,4 +1,6 @@
 import google.generativeai as genai
+import requests
+import json
 from typing import List, Dict, Any
 from config import settings
 from services.embedder import embedder
@@ -9,25 +11,69 @@ class QAChain:
     
     def __init__(self):
         """Gemini API를 초기화합니다."""
-        self._configure_gemini()
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.use_oauth = self._configure_gemini()
+        if not self.use_oauth:
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
     
-    def _configure_gemini(self):
-        """Gemini API를 설정합니다."""
+    def _configure_gemini(self) -> bool:
+        """Gemini API를 설정합니다. OAuth 사용 여부를 반환합니다."""
         # OAuth credentials 사용 (Railway 배포용)
         credentials = settings.get_google_credentials()
         if credentials:
-            genai.configure(credentials=credentials)
-            print("Gemini API OAuth 설정 완료")
-            return
+            try:
+                # Access token 새로 고침
+                import google.auth.transport.requests
+                request = google.auth.transport.requests.Request()
+                credentials.refresh(request)
+                
+                self.access_token = credentials.token
+                print("Gemini API OAuth 설정 완료")
+                return True
+            except Exception as e:
+                print(f"OAuth 설정 실패: {e}")
+                # API Key로 백업 시도
         
         # API Key 사용 (로컬 개발용)
         if settings.GEMINI_API_KEY:
             genai.configure(api_key=settings.GEMINI_API_KEY)
             print("Gemini API Key 설정 완료")
-            return
+            return False
             
         raise Exception("GOOGLE_CREDENTIALS 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
+    
+    def _generate_content_oauth(self, prompt: str) -> str:
+        """OAuth를 사용하여 직접 REST API로 콘텐츠를 생성합니다."""
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json",
+        }
+        
+        data = {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.3,
+                "maxOutputTokens": 2000,
+                "topP": 0.8,
+                "topK": 40
+            }
+        }
+        
+        response = requests.post(
+            "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent",
+            headers=headers,
+            json=data,
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            raise Exception(f"Gemini API 호출 실패: {response.status_code} - {response.text}")
+        
+        result = response.json()
+        if "candidates" in result and len(result["candidates"]) > 0:
+            content = result["candidates"][0]["content"]["parts"][0]["text"]
+            return content
+        else:
+            raise Exception("Gemini API 응답에서 콘텐츠를 찾을 수 없습니다.")
     
     def create_prompt(self, question: str, retrieved_chunks: List[Dict[str, Any]]) -> str:
         """
@@ -135,18 +181,19 @@ class QAChain:
             prompt = self.create_prompt(question, retrieved_chunks)
             
             # 4. Gemini API로 답변 생성
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.3,  # 창의성 vs 일관성 (낮을수록 일관성)
-                    max_output_tokens=2000,  # 최대 토큰 수 (약 1500-1600자)
-                    top_p=0.8,  # 누적 확률 임계값
-                    top_k=40   # 상위 k개 토큰 고려
+            if self.use_oauth:
+                answer = self._generate_content_oauth(prompt).strip()
+            else:
+                response = self.model.generate_content(
+                    prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.3,  # 창의성 vs 일관성 (낮을수록 일관성)
+                        max_output_tokens=2000,  # 최대 토큰 수 (약 1500-1600자)
+                        top_p=0.8,  # 누적 확률 임계값
+                        top_k=40   # 상위 k개 토큰 고려
+                    )
                 )
-            )
-            
-            # 5. 응답 처리
-            answer = response.text.strip()
+                answer = response.text.strip()
             
             # 6. 소스 정보 정리
             sources = []
@@ -179,11 +226,15 @@ class QAChain:
     def test_connection(self) -> Dict[str, Any]:
         """Gemini API 연결을 테스트합니다."""
         try:
-            test_response = self.model.generate_content("안녕하세요. 테스트입니다.")
+            if self.use_oauth:
+                test_response = self._generate_content_oauth("안녕하세요. 테스트입니다.")
+            else:
+                test_response = self.model.generate_content("안녕하세요. 테스트입니다.").text
+            
             return {
                 "status": "success",
                 "message": "Gemini API 연결 성공",
-                "response": test_response.text[:100]
+                "response": test_response[:100]
             }
         except Exception as e:
             return {
