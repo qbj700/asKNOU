@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
     print(f"📄 PDF 저장 경로: {settings.PDF_DIR}")
     print(f"🔍 벡터 저장소 경로: {settings.VECTORSTORE_DIR}")
     print(f"🤖 임베딩 모델: {settings.EMBEDDING_MODEL}")
-    print(f"🔗 Gemini API 키 설정됨: {'✅' if settings.GEMINI_API_KEY else '❌'}")
+    print(f"🔗 Google OAuth 설정됨: {'✅' if settings.GOOGLE_CREDENTIALS else '❌'}")
     
     # 디렉터리 생성 확인
     try:

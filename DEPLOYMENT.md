@@ -5,7 +5,7 @@
 ### 1. 사전 준비
 - [ ] Railway 계정 생성 및 로그인
 - [ ] GitHub 저장소에 코드 푸시
-- [ ] Gemini API 키 준비
+- [ ] Google OAuth Service Account JSON 키 준비
 
 ### 2. Railway 배포 단계
 1. **새 프로젝트 생성**
@@ -33,7 +33,7 @@
    JWT_SECRET_KEY=your_secure_jwt_secret
    ```
 
-   **참고**: 로컬 개발시에는 기존 방식대로 `GEMINI_API_KEY`를 사용할 수 있습니다.
+   **참고**: 로컬 개발시에도 `.env` 파일에 `GOOGLE_CREDENTIALS`를 설정하여 사용합니다.
 
 3. **배포 설정**
    Settings 탭에서 설정:

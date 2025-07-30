@@ -1,4 +1,3 @@
-import google.generativeai as genai
 import requests
 import json
 from typing import List, Dict, Any
@@ -10,36 +9,26 @@ class QAChain:
     """질문 응답 체인 클래스"""
     
     def __init__(self):
-        """Gemini API를 초기화합니다."""
-        self.use_oauth = self._configure_gemini()
-        if not self.use_oauth:
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+        """OAuth를 사용하여 Gemini API를 초기화합니다."""
+        self._configure_gemini()
     
-    def _configure_gemini(self) -> bool:
-        """Gemini API를 설정합니다. OAuth 사용 여부를 반환합니다."""
-        # OAuth credentials 사용 (Railway 배포용)
+    def _configure_gemini(self):
+        """OAuth를 사용하여 Gemini API를 설정합니다."""
         credentials = settings.get_google_credentials()
-        if credentials:
-            try:
-                # Access token 새로 고침
-                import google.auth.transport.requests
-                request = google.auth.transport.requests.Request()
-                credentials.refresh(request)
-                
-                self.access_token = credentials.token
-                print("Gemini API OAuth 설정 완료")
-                return True
-            except Exception as e:
-                print(f"OAuth 설정 실패: {e}")
-                # API Key로 백업 시도
+        if not credentials:
+            raise Exception("Google OAuth credentials를 로드할 수 없습니다.")
         
-        # API Key 사용 (로컬 개발용)
-        if settings.GEMINI_API_KEY:
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            print("Gemini API Key 설정 완료")
-            return False
+        try:
+            # Access token 새로 고침
+            import google.auth.transport.requests
+            request = google.auth.transport.requests.Request()
+            credentials.refresh(request)
             
-        raise Exception("GOOGLE_CREDENTIALS 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
+            self.access_token = credentials.token
+            print("✅ Gemini API OAuth 설정 완료")
+        except Exception as e:
+            print(f"❌ OAuth 설정 실패: {e}")
+            raise Exception(f"OAuth 설정 실패: {e}")
     
     def _generate_content_oauth(self, prompt: str) -> str:
         """OAuth를 사용하여 직접 REST API로 콘텐츠를 생성합니다."""
@@ -180,20 +169,8 @@ class QAChain:
             # 3. 프롬프트 생성
             prompt = self.create_prompt(question, retrieved_chunks)
             
-            # 4. Gemini API로 답변 생성
-            if self.use_oauth:
-                answer = self._generate_content_oauth(prompt).strip()
-            else:
-                response = self.model.generate_content(
-                    prompt,
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=0.3,  # 창의성 vs 일관성 (낮을수록 일관성)
-                        max_output_tokens=2000,  # 최대 토큰 수 (약 1500-1600자)
-                        top_p=0.8,  # 누적 확률 임계값
-                        top_k=40   # 상위 k개 토큰 고려
-                    )
-                )
-                answer = response.text.strip()
+            # 4. Gemini API로 답변 생성 (OAuth 전용)
+            answer = self._generate_content_oauth(prompt).strip()
             
             # 6. 소스 정보 정리
             sources = []
@@ -224,22 +201,18 @@ class QAChain:
             }
     
     def test_connection(self) -> Dict[str, Any]:
-        """Gemini API 연결을 테스트합니다."""
+        """Gemini API OAuth 연결을 테스트합니다."""
         try:
-            if self.use_oauth:
-                test_response = self._generate_content_oauth("안녕하세요. 테스트입니다.")
-            else:
-                test_response = self.model.generate_content("안녕하세요. 테스트입니다.").text
-            
+            test_response = self._generate_content_oauth("안녕하세요. 테스트입니다.")
             return {
                 "status": "success",
-                "message": "Gemini API 연결 성공",
+                "message": "Gemini API OAuth 연결 성공",
                 "response": test_response[:100]
             }
         except Exception as e:
             return {
                 "status": "error",
-                "message": f"Gemini API 연결 실패: {str(e)}"
+                "message": f"Gemini API OAuth 연결 실패: {str(e)}"
             }
 
 # 글로벌 QA 체인 인스턴스

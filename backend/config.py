@@ -10,8 +10,7 @@ from google.oauth2 import service_account
 load_dotenv()
 
 class Settings:
-    # Gemini API 설정
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    # Google OAuth 설정 (API Key 방식 제거)
     GOOGLE_CREDENTIALS: str = os.getenv("GOOGLE_CREDENTIALS", "")
     
     # 서버 설정
@@ -38,19 +37,32 @@ class Settings:
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this")
     
     def get_google_credentials(self) -> Optional[service_account.Credentials]:
-        """Google OAuth credentials를 반환합니다."""
-        if self.GOOGLE_CREDENTIALS:
-            try:
-                credentials_info = json.loads(self.GOOGLE_CREDENTIALS)
-                credentials = service_account.Credentials.from_service_account_info(
-                    credentials_info,
-                    scopes=["https://www.googleapis.com/auth/cloud-platform"]
-                )
-                return credentials
-            except Exception as e:
-                print(f"Google credentials 로드 실패: {e}")
-                return None
-        return None
+        """Google OAuth credentials를 환경변수에서 반환합니다."""
+        if not self.GOOGLE_CREDENTIALS:
+            print("❌ GOOGLE_CREDENTIALS 환경변수가 설정되지 않았습니다.")
+            print("   .env 파일에 GOOGLE_CREDENTIALS='{\"type\":\"service_account\",...}' 추가 필요")
+            return None
+            
+        try:
+            # Generative AI API에 필요한 scope들
+            scopes = [
+                "https://www.googleapis.com/auth/generative-language",
+                "https://www.googleapis.com/auth/cloud-platform"
+            ]
+            
+            credentials_info = json.loads(self.GOOGLE_CREDENTIALS)
+            credentials = service_account.Credentials.from_service_account_info(
+                credentials_info,
+                scopes=scopes
+            )
+            print("✅ Google OAuth credentials 로드 성공")
+            return credentials
+        except json.JSONDecodeError as e:
+            print(f"❌ GOOGLE_CREDENTIALS JSON 파싱 실패: {e}")
+            return None
+        except Exception as e:
+            print(f"❌ Google credentials 로드 실패: {e}")
+            return None
 
     def __init__(self):
         # 디렉터리 생성
