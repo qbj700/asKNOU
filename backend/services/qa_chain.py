@@ -14,11 +14,20 @@ class QAChain:
     
     def _configure_gemini(self):
         """Gemini API를 설정합니다."""
-        if not settings.GEMINI_API_KEY:
-            raise Exception("GEMINI_API_KEY가 설정되지 않았습니다.")
+        # OAuth credentials 사용 (Railway 배포용)
+        credentials = settings.get_google_credentials()
+        if credentials:
+            genai.configure(credentials=credentials)
+            print("Gemini API OAuth 설정 완료")
+            return
         
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        print("Gemini API 설정 완료")
+        # API Key 사용 (로컬 개발용)
+        if settings.GEMINI_API_KEY:
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            print("Gemini API Key 설정 완료")
+            return
+            
+        raise Exception("GOOGLE_CREDENTIALS 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
     
     def create_prompt(self, question: str, retrieved_chunks: List[Dict[str, Any]]) -> str:
         """

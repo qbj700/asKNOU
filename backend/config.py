@@ -1,6 +1,10 @@
 import os
+import json
 from dotenv import load_dotenv
 from pathlib import Path
+from typing import Optional
+import google.auth
+from google.oauth2 import service_account
 
 # 환경 변수 로드
 load_dotenv()
@@ -8,6 +12,7 @@ load_dotenv()
 class Settings:
     # Gemini API 설정
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GOOGLE_CREDENTIALS: str = os.getenv("GOOGLE_CREDENTIALS", "")
     
     # 서버 설정
     HOST: str = os.getenv("HOST", "0.0.0.0")
@@ -32,6 +37,21 @@ class Settings:
     ADMIN_PW: str = os.getenv("ADMIN_PW", "password")
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this")
     
+    def get_google_credentials(self) -> Optional[service_account.Credentials]:
+        """Google OAuth credentials를 반환합니다."""
+        if self.GOOGLE_CREDENTIALS:
+            try:
+                credentials_info = json.loads(self.GOOGLE_CREDENTIALS)
+                credentials = service_account.Credentials.from_service_account_info(
+                    credentials_info,
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                )
+                return credentials
+            except Exception as e:
+                print(f"Google credentials 로드 실패: {e}")
+                return None
+        return None
+
     def __init__(self):
         # 디렉터리 생성
         self.DATA_DIR.mkdir(exist_ok=True)

@@ -1,29 +1,29 @@
 # asKNOU 배포 가이드
 
-## 🚀 Render (Backend) 배포
+## 🚀 Railway (Backend) 배포
 
 ### 1. 사전 준비
-- [ ] Render 계정 생성 및 로그인
+- [ ] Railway 계정 생성 및 로그인
 - [ ] GitHub 저장소에 코드 푸시
 - [ ] Gemini API 키 준비
 
-### 2. Render 배포 단계
-1. **새 Web Service 생성**
-   - Repository: GitHub 저장소 선택
-   - Root Directory: `backend`
-   - Environment: `Python 3`
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+### 2. Railway 배포 단계
+1. **새 프로젝트 생성**
+   - "New Project" 클릭
+   - "Deploy from GitHub repo" 선택
+   - GitHub 저장소 선택
+   - Service 설정에서 Root Directory: `backend` 설정
 
 2. **환경변수 설정**
+   Railway 대시보드 Variables 탭에서 설정:
    ```
-   GEMINI_API_KEY=your_actual_gemini_api_key
+   GOOGLE_CREDENTIALS={"type":"service_account","project_id":"...","private_key_id":"...","private_key":"...","client_email":"...","client_id":"...","auth_uri":"...","token_uri":"...","auth_provider_x509_cert_url":"...","client_x509_cert_url":"..."}
    HOST=0.0.0.0
    PORT=$PORT
    DEBUG=False
-   DATA_DIR=/opt/render/project/src/data
-   PDF_DIR=/opt/render/project/src/data/pdfs
-   VECTORSTORE_DIR=/opt/render/project/src/data/vectorstore
+   DATA_DIR=./data
+   PDF_DIR=./data/pdfs
+   VECTORSTORE_DIR=./data/vectorstore
    EMBEDDING_MODEL=jhgan/ko-sbert-sts
    TOP_K_RESULTS=5
    CHUNK_SIZE=600
@@ -33,7 +33,15 @@
    JWT_SECRET_KEY=your_secure_jwt_secret
    ```
 
-3. **배포 확인**
+   **참고**: 로컬 개발시에는 기존 방식대로 `GEMINI_API_KEY`를 사용할 수 있습니다.
+
+3. **배포 설정**
+   Settings 탭에서 설정:
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - Python Version: 3.12
+
+4. **배포 확인**
    - 배포 완료 후 제공되는 URL 확인
    - `/health` 엔드포인트로 상태 확인
    - `/docs` 에서 API 문서 확인
@@ -53,7 +61,7 @@
 
 2. **환경변수 설정**
    ```
-   NEXT_PUBLIC_API_URL=https://your-backend-app.onrender.com
+   NEXT_PUBLIC_API_URL=https://your-backend-app.railway.app
    NEXT_PUBLIC_ADMIN_ID=admin
    NEXT_PUBLIC_ADMIN_PW=your_secure_password
    ```
@@ -111,7 +119,7 @@ allow_origins=[
    - 강력한 비밀번호 사용
 
 2. **성능**
-   - Render 무료 플랜은 비활성 시 슬립 모드
+   - Railway 무료 플랜은 월 사용량 제한
    - 첫 요청 시 웜업 시간 필요
    - 대용량 파일 업로드 시 타임아웃 고려
 
@@ -126,8 +134,8 @@ allow_origins=[
 1. **CORS 에러**: 프론트엔드 도메인이 백엔드 CORS 설정에 포함되어 있는지 확인
 2. **API 연결 실패**: 환경변수 `NEXT_PUBLIC_API_URL`이 올바른지 확인
 3. **빌드 실패**: 의존성 버전 충돌 확인
-4. **메모리 부족**: Render 플랜 업그레이드 고려
+4. **메모리 부족**: Railway 플랜 업그레이드 고려
 
 ### 로그 확인 방법
-- Render: 대시보드에서 로그 확인
+- Railway: 프로젝트 대시보드에서 Deploy Logs 및 Service Logs 확인
 - Vercel: 함수 로그 및 빌드 로그 확인 
