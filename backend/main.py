@@ -71,15 +71,23 @@ app = FastAPI(
 )
 
 # CORS 설정
+# 개발 환경에서는 모든 origins 허용, 운영에서는 특정 도메인만
+if settings.DEBUG:
+    # 개발 중에는 모든 origins 허용
+    allow_origins = ["*"]
+else:
+    # 운영에서는 특정 도메인만
+    allow_origins = [
+        "http://localhost:3000",  # Next.js 로컬 개발 (혹시 몰라서)
+        "http://127.0.0.1:3000",
+        "https://asknou.vercel.app",  # Vercel 배포
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Next.js 개발 서버
-        "http://127.0.0.1:3000",
-        "https://https://asknou.vercel.app/"  # 실제 프론트엔드 도메인으로 변경 필요
-    ],
+    allow_origins=allow_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
