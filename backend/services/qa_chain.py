@@ -18,20 +18,36 @@ class QAChain:
         if not credentials:
             raise Exception("Google OAuth credentials를 로드할 수 없습니다.")
         
+        # credentials 객체를 보관 (토큰 만료 체크를 위해)
+        self.credentials = credentials
+        
+        # 초기 토큰 갱신
         try:
-            # Access token 새로 고침
-            import google.auth.transport.requests
-            request = google.auth.transport.requests.Request()
-            credentials.refresh(request)
-            
-            self.access_token = credentials.token
+            from google.auth.transport.requests import Request
+            self.credentials.refresh(Request())
+            self.access_token = self.credentials.token
             print("✅ Gemini API OAuth 설정 완료")
         except Exception as e:
             print(f"❌ OAuth 설정 실패: {e}")
             raise Exception(f"OAuth 설정 실패: {e}")
     
+    def _ensure_valid_token(self):
+        """토큰이 만료되었으면 갱신합니다."""
+        if self.credentials.expired:
+            try:
+                from google.auth.transport.requests import Request
+                self.credentials.refresh(Request())
+                self.access_token = self.credentials.token
+                print("🔄 Access token 갱신 완료")
+            except Exception as e:
+                print(f"❌ 토큰 갱신 실패: {e}")
+                raise Exception(f"토큰 갱신 실패: {e}")
+    
     def _generate_content_oauth(self, prompt: str) -> str:
         """OAuth를 사용하여 직접 REST API로 콘텐츠를 생성합니다."""
+        # 토큰이 만료되었으면 갱신 (효율적!)
+        self._ensure_valid_token()
+        
         headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
