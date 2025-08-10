@@ -1,10 +1,66 @@
 import Head from 'next/head';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import ChatBox, { ChatBoxRef } from '../components/ChatBox';
+import { apiService } from '../lib/api';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const chatBoxRef = useRef<ChatBoxRef>(null);
+
+  // 서버 헬스 상태
+  const [healthStatus, setHealthStatus] = useState<'checking'|'healthy'|'degraded'|'unhealthy'>('checking');
+  const [healthLabel, setHealthLabel] = useState('상태 확인중');
+  const [healthTooltip, setHealthTooltip] = useState('서버 상태 확인 중');
+
+  useEffect(() => {
+    let isMounted = true;
+    const check = async () => {
+      try {
+        const res = await apiService.healthCheck();
+        const embedding = Boolean(res?.system?.embedding_model_loaded);
+        const gemini = res?.system?.gemini_api_status === 'success';
+        const overall = res?.status === 'healthy';
+
+        let status: 'healthy'|'degraded'|'unhealthy' = 'healthy';
+        if (overall && embedding && gemini) status = 'healthy';
+        else if (overall) status = 'degraded';
+        else status = 'unhealthy';
+
+        if (!isMounted) return;
+        setHealthStatus(status);
+        setHealthLabel(status === 'healthy' ? '온라인' : status === 'degraded' ? '일시 지연' : '오프라인');
+        setHealthTooltip(
+          status === 'healthy'
+            ? '서버 정상 작동'
+            : status === 'degraded'
+            ? '일부 구성요소 점검/지연 (임베딩 또는 Gemini)'
+            : '서버 응답 지연 또는 점검중'
+        );
+      } catch (e) {
+        if (!isMounted) return;
+        setHealthStatus('unhealthy');
+        setHealthLabel('오프라인');
+        setHealthTooltip('서버 응답 없음 또는 초기 기동 중');
+      }
+    };
+
+    check();
+    const id = setInterval(check, 60000);
+    return () => { isMounted = false; clearInterval(id); };
+  }, []);
+
+  const statusColor = {
+    checking: 'bg-gray-300',
+    healthy: 'bg-green-400',
+    degraded: 'bg-yellow-400',
+    unhealthy: 'bg-red-400',
+  }[healthStatus];
+
+  const handleHardReload: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+    e.preventDefault();
+    window.location.href = '/';
+  };
 
   const handleQuestionClick = (question: string) => {
     chatBoxRef.current?.askQuestion(question);
@@ -39,17 +95,20 @@ export default function Home() {
                   </svg>
                 </button>
                 
-                <div className="flex items-center justify-center">
-                  <span className="text-2xl">🎓</span>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-knou-600">asKNOU</h1>
-                  <p className="text-xs text-gray-500">방송통신대학교 AI 길라잡이</p>
-                </div>
+                <Link href="/" onClick={handleHardReload} className="flex items-center space-x-3 group">
+                  <div className="flex items-center justify-center">
+                    <span className="text-2xl">🎓</span>
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-knou-600 group-hover:text-knou-700">asKNOU</h1>
+                    <p className="text-xs text-gray-500">방송통신대학교 AI 길라잡이</p>
+                  </div>
+                </Link>
               </div>
               
-              <nav className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse-slow" title="온라인 상태"></div>
+              <nav className="flex items-center space-x-2" title={healthTooltip}>
+                <div className={`w-2 h-2 rounded-full animate-pulse-slow ${statusColor}`} />
+                <span className="text-xs text-gray-500 hidden sm:inline">{healthLabel}</span>
               </nav>
             </div>
           </div>
@@ -67,7 +126,7 @@ export default function Home() {
             )}
             
             {/* 사이드바 */}
-                        <div className={`
+            <div className={`
               lg:w-96 
               lg:relative lg:translate-x-0 lg:block
               ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -79,7 +138,7 @@ export default function Home() {
               {/* 모바일 헤더 */}
               <div className="lg:hidden flex items-center mb-4 h-16 bg-white shadow-sm border-b px-4 -mx-4">
                 <div className="flex-1"></div>
-                <div className="flex items-center space-x-3">
+                <Link href="/" onClick={handleHardReload} className="flex items-center space-x-3">
                   <div className="flex items-center justify-center">
                     <span className="text-2xl">🎓</span>
                   </div>
@@ -87,7 +146,7 @@ export default function Home() {
                     <h1 className="text-xl font-bold text-knou-600">asKNOU</h1>
                     <p className="text-xs text-gray-500">방송통신대학교 AI 길라잡이</p>
                   </div>
-                </div>
+                </Link>
                 <div className="flex-1 flex justify-end">
                   <button
                     onClick={() => setSidebarOpen(false)}
@@ -100,7 +159,7 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              
+
               {/* 카드 컨테이너 */}
               <div className="space-y-6">
                 {/* 자주찾는 질문 카드 */}
@@ -198,12 +257,12 @@ export default function Home() {
         <footer className="bg-white border-t mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col space-y-2">
-              <div className="text-sm text-gray-600 whitespace-nowrap">
+              <div className="text-sm text-gray-600 whitespace-normal lg:whitespace-nowrap break-words text-center lg:text-left">
                 © 2025 asKNOU. 방송통신대학교 학사정보 AI 길라잡이 
                 <span className="text-xs text-gray-500 ml-2">Powered by Gemini AI & RAG Technology</span>
               </div>
               
-              <div className="text-xs text-gray-500 leading-relaxed whitespace-nowrap">
+              <div className="text-xs text-gray-500 leading-relaxed whitespace-normal lg:whitespace-nowrap break-words text-center lg:text-left">
                 본 서비스는 PyMuPDF(AGPL v3), FastAPI(MIT), Transformers(Apache 2.0) 등 다양한 오픈소스 소프트웨어를 사용하며, 전체 소스코드는 AGPL v3 라이선스에 따라 
                 <a href="https://github.com/qbj700/asKNOU" target="_blank" rel="noopener noreferrer" className="text-knou-600 hover:text-knou-700 underline ml-1">GitHub</a>에서 공개되어 있습니다.
               </div>
